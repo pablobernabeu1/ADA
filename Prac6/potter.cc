@@ -10,11 +10,13 @@ using namespace std;
 
 const int SENTINEL = -1;
 
+// Función que convierte un string a numero, en la lectura de los archivos
 int convertir_a_numero(char cadena){
   int s = cadena-48;
   return s;
 }
 
+// Función para leer los archivos y almacenar la información en sus variables
 void leerFichero(ifstream &fichero, string &file, int &n, int &T, vector<int> &t, vector<int> &v, vector<int> &m){
 
   if(fichero.is_open()){
@@ -65,7 +67,7 @@ void leerFichero(ifstream &fichero, string &file, int &n, int &T, vector<int> &t
 
 
 
-
+// Recursivo sin almacén (versión ingenua)
 int recursivoSinAlmacen(int n, int T, vector<int> &t, vector<int> &v, int &tiempoTotal){
 
   if(n==0 || T==0){
@@ -84,6 +86,7 @@ int recursivoSinAlmacen(int n, int T, vector<int> &t, vector<int> &v, int &tiemp
   return max(s1, s2);
 }
 
+// Recursivo con almacén (memoización), segunda función
 int recursivoConAlmacen2(vector<vector<double>> &M, vector<int> &v, vector<int> &t, int n, int T){
   if(M[n][T]!=SENTINEL) return M[n][T];
 
@@ -100,11 +103,13 @@ int recursivoConAlmacen2(vector<vector<double>> &M, vector<int> &v, vector<int> 
 
 }
 
+// Recursivo con almacén (memoización), primera función
 int recursivoConAlmacen1(vector<int> &t, vector<int> &v,  int n, int T){
   vector<vector<double>> M(n+1, vector<double>(T+1, SENTINEL));
   return recursivoConAlmacen2(M, v, t, n, T);
 }
 
+// Iterativo con almacén que hace uso de una tabla para almacenar los resultados intermedios
 int iterativoConAlmacenYTabla(vector<int> &v, vector<int> &w, int last_n, int last_W){
   vector<vector<int>> M(last_n+1, vector<int>(last_W+1));
 
@@ -125,6 +130,7 @@ int iterativoConAlmacenYTabla(vector<int> &v, vector<int> &w, int last_n, int la
   return M[last_n][last_W];
 }
 
+// Iterativo con almacén con complejidad espacial mejorada
 int iterativoConAlmacenConTiempoMejorado(vector<int> &v, vector<int> &w, int last_n, int last_W){
   vector<int> v0(last_W+1);
   vector<int> v1(last_W+1);
@@ -148,9 +154,74 @@ int iterativoConAlmacenConTiempoMejorado(vector<int> &v, vector<int> &w, int las
   return v0[last_W];
 }
 
+// Iterativo con almacén con complejidad espacial mejorada , con almacenamiento de todas las decisiones
+int iterativoConAlmacenConTiempoMejoradoAlmacenandoDecisiones(vector<int> &v, vector<int> &w, int last_n, int last_W, vector<vector<bool>> &trace){
+  vector<vector<int>> M(last_n+1, vector<int>(last_W+1));
+  vector<vector<bool>>(last_n+1, vector<bool>(last_W+1));
+
+
+  for(int W=0; W<=last_W; W++){
+    M[0][W] = 0;
+    trace[0][W] = false;
+  }
+
+  for(int n=1; n<=last_n; n++){
+    for(int W=1; W<=last_W; W++){
+      double s1 = M[n-1][W];
+      double s2 = 0;
+
+      if(W>=w[n-1]){
+        s2 = v[n-1] + M[n-1][W-w[n-1]];
+      }
+
+      M[n][W] = max(s1, s2);
+      trace[n][W] = s2>s1;
+    }
+  }
+
+  return M[last_n][last_W];
+}
+
+// Extracción de las decisiones que interesan
+void parse(vector<int> &w, vector<vector<bool>> &trace, vector<bool> &sol){
+
+  int last_n = trace.size()-1;
+  int W = trace[0].size()-1;
+
+  for(int n=last_n; n>0; n--){
+    if(trace[n][W]){
+      sol[n-1] = true;
+      W-=w[n-1];
+    }
+    else{
+      sol[n-1] = false;
+    }
+  }
+
+}
+
+// Extracción de la selección (directamente del almacén)
+void parse2(vector<vector<int>> &M, vector<int> &v, vector<int> &w, int n, int W, vector<bool> &sol){
+  if(n==0) return;
+
+  int s1 = M[n-1][W];
+  int s2 = 0;
+  if(W>=w[n-1]){
+    s2 = v[n-1] + M[n-1][W-w[n-1]];
+  }
+  if(s1>=s2){
+    sol[n-1] = false;
+    parse2(M, v, w, n-1, W, sol);
+  }
+  else{
+    sol[n-1] = true;
+    parse2(M, v, w, n-1, W-w[n-1], sol);
+  }
+}
 
 
 
+// Función principal
 int main(int argc, char *argv[]){
 
   string file="";
