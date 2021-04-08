@@ -103,7 +103,6 @@ int recursivoConAlmacen2(vector<vector<double>> &M, vector<int> &v, vector<int> 
 
 }
 
-
 // Iterativo con almacén que hace uso de una tabla para almacenar los resultados intermedios
 int iterativoConAlmacenYTabla(vector<int> &v, vector<int> &w, int last_n, int last_W, vector<vector<int>> &M){
 
@@ -267,6 +266,11 @@ int main(int argc, char *argv[]){
       ignoreOption=true;
     }
   }
+  for(int i=1; i<argc; i++){
+    if(strcmp(argv[i], "-t")==0){
+      tOption=true;
+    }
+  }
 
 
   // Gestión de argumentos
@@ -315,10 +319,9 @@ int main(int argc, char *argv[]){
           cout<<iterativoConAlmacenConTiempoMejorado(vMejor, tiemposMejor, nMejor, T)<<endl;
           cout<<"?"<<endl;
           cout<<"?"<<endl;
-          cout<<"Memoization matrix: "<<endl;
-          cout<<"?"<<endl;
-          cout<<"Iterative matrix: "<<endl;
-          cout<<"?"<<endl;
+
+          mostrarMatrizMemo(M, n, T, m);
+          mostrarMatrizIter(MIter, n, T, m);
 
         }
         else if(tOption && !ignoreOption){
@@ -329,11 +332,9 @@ int main(int argc, char *argv[]){
           cout<<iterativoConAlmacenConTiempoMejorado(vMejor, tiemposMejor, nMejor, T)<<endl;
           cout<<"?"<<endl;
           cout<<"?"<<endl;
-          cout<<"?"<<endl;
-          cout<<"Memoization matrix: "<<endl;
-          cout<<"?"<<endl;
-          cout<<"Iterative matrix: "<<endl;
-          cout<<"?"<<endl;
+
+          mostrarMatrizMemo(M, n, T, m);
+          mostrarMatrizIter(MIter, n, T, m);
 
         }
         else if(!tOption && ignoreOption){
@@ -354,9 +355,6 @@ int main(int argc, char *argv[]){
           cout<<"?"<<endl;
           cout<<tiempoTotal<<endl;
 
-          mostrarMatrizMemo(M, n, T, m);
-          mostrarMatrizIter(MIter, n, T, m);
-
         }
 
 
@@ -370,7 +368,7 @@ int main(int argc, char *argv[]){
     }
     else if(strcmp(argv[i], "--ignore-naive")==0 || strcmp(argv[i], "-t")==0 || strcmp(argv[i], "-f")==0){
       if(strcmp(argv[i], "--ignore-naive")==0){
-        ignoreOption=false;
+        ignoreOption=true;
       }
       if(strcmp(argv[i], "-t")==0){
         tOption=true;
