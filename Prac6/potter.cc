@@ -87,31 +87,25 @@ int recursivoSinAlmacen(int n, int T, vector<int> &t, vector<int> &v, int &tiemp
 }
 
 // Recursivo con almacén (memoización), segunda función
-int recursivoConAlmacen2(vector<vector<double>> &M, vector<int> &v, vector<int> &t, int n, int T){
+int recursivoConAlmacen2(vector<vector<double>> &M, vector<int> &v, vector<int> &t, int n, int T, vector<int> &copiasDeCadaObjeto){
   if(M[n][T]!=SENTINEL) return M[n][T];
 
   if(n==0) return M[n][T] = 0.0;
 
-  double s1 = recursivoConAlmacen2(M, v, t, n-1, T);
+  double s1 = recursivoConAlmacen2(M, v, t, n-1, T, copiasDeCadaObjeto);
   double s2 = 0;
 
   if(t[n-1] <= T){
-    s2 = v[n-1] + recursivoConAlmacen2(M, v, t, n-1, T-t[n-1]);
+    s2 = v[n-1] + recursivoConAlmacen2(M, v, t, n-1, T-t[n-1], copiasDeCadaObjeto);
   }
 
   return M[n][T] = max(s1, s2);
 
 }
 
-// Recursivo con almacén (memoización), primera función
-int recursivoConAlmacen1(vector<int> &t, vector<int> &v,  int n, int T){
-  vector<vector<double>> M(n+1, vector<double>(T+1, SENTINEL));
-  return recursivoConAlmacen2(M, v, t, n, T);
-}
 
 // Iterativo con almacén que hace uso de una tabla para almacenar los resultados intermedios
-int iterativoConAlmacenYTabla(vector<int> &v, vector<int> &w, int last_n, int last_W){
-  vector<vector<int>> M(last_n+1, vector<int>(last_W+1));
+int iterativoConAlmacenYTabla(vector<int> &v, vector<int> &w, int last_n, int last_W, vector<vector<int>> &M){
 
   for(int W=0; W<=last_W; W++) M[0][W] = 0;
   for(int n=0; n<=last_n; n++) M[n][0] = 0;
@@ -219,6 +213,46 @@ void parse2(vector<vector<int>> &M, vector<int> &v, vector<int> &w, int n, int W
   }
 }
 
+// Función para mostrar la matriz de Memoization
+void mostrarMatrizMemo(vector<vector<double>> &M, int n, int T, vector<int> &m){
+  int cont=0;
+
+  cout<<"Memoization matrix:"<<endl;
+  for(int i=0; i<n; i++){
+    M[cont][T+1] = i;
+    cont+=m[i];
+    for(int j=0; j<T+1; j++){
+      if(M[cont][j]==SENTINEL){
+        cout<<"- ";
+      }
+      else{
+        cout<<M[cont][j]<<" ";
+      }
+    }
+    cout<<endl;
+  }
+}
+
+void mostrarMatrizIter(vector<vector<int>> &M, int n, int T, vector<int> &m){
+  cout<<"Iterative matrix:"<<endl;
+
+  int cont=0;
+
+  for(int i=0; i<n; i++){
+    M[cont][T+1] = i;
+    cont+=m[i];
+    for(int j=0; j<T+1; j++){
+      if(M[cont][j]==SENTINEL){
+        cout<<"- ";
+      }
+      else{
+        cout<<M[cont][j]<<" ";
+      }
+    }
+    cout<<endl;
+  }
+}
+
 
 
 // Función principal
@@ -249,9 +283,12 @@ int main(int argc, char *argv[]){
         vector<int> t;
         vector<int> v;
         vector<int> m;
+        vector<int> copiasDeCadaObjeto;
 
         vector<int> vMejor;
         vector<int> tiemposMejor;
+
+
 
         ifstream fichero(file);
         leerFichero(fichero, file, n, T, t, v, m);
@@ -266,10 +303,15 @@ int main(int argc, char *argv[]){
 
         int nMejor = vMejor.size();
 
+
+        vector<vector<double>> M(nMejor+1, vector<double>(T+1, SENTINEL));
+        vector<vector<int>> MIter(nMejor+1, vector<int>(T+1));
+
+
         if(tOption && ignoreOption){
 
-          cout<<recursivoConAlmacen1(tiemposMejor, vMejor, nMejor, T)<<" ";
-          cout<<iterativoConAlmacenYTabla(vMejor, tiemposMejor, nMejor, T)<<" ";
+          cout<<recursivoConAlmacen2(M, vMejor, tiemposMejor, nMejor, T, copiasDeCadaObjeto)<<" ";
+          cout<<iterativoConAlmacenYTabla(vMejor, tiemposMejor, nMejor, T, MIter)<<" ";
           cout<<iterativoConAlmacenConTiempoMejorado(vMejor, tiemposMejor, nMejor, T)<<endl;
           cout<<"?"<<endl;
           cout<<"?"<<endl;
@@ -282,8 +324,8 @@ int main(int argc, char *argv[]){
         else if(tOption && !ignoreOption){
 
           cout<<recursivoSinAlmacen(nMejor, T, tiemposMejor, vMejor, tiempoTotal)<<" ";
-          cout<<recursivoConAlmacen1(tiemposMejor, vMejor, nMejor, T)<<" ";
-          cout<<iterativoConAlmacenYTabla(vMejor, tiemposMejor, nMejor, T)<<" ";
+          cout<<recursivoConAlmacen2(M, vMejor, tiemposMejor, nMejor, T, copiasDeCadaObjeto)<<" ";
+          cout<<iterativoConAlmacenYTabla(vMejor, tiemposMejor, nMejor, T, MIter)<<" ";
           cout<<iterativoConAlmacenConTiempoMejorado(vMejor, tiemposMejor, nMejor, T)<<endl;
           cout<<"?"<<endl;
           cout<<"?"<<endl;
@@ -296,8 +338,8 @@ int main(int argc, char *argv[]){
         }
         else if(!tOption && ignoreOption){
 
-          cout<<recursivoConAlmacen1(tiemposMejor, vMejor, nMejor, T)<<" ";
-          cout<<iterativoConAlmacenYTabla(vMejor, tiemposMejor, nMejor, T)<<" ";
+          cout<<recursivoConAlmacen2(M, vMejor, tiemposMejor, nMejor, T, copiasDeCadaObjeto)<<" ";
+          cout<<iterativoConAlmacenYTabla(vMejor, tiemposMejor, nMejor, T, MIter)<<" ";
           cout<<iterativoConAlmacenConTiempoMejorado(vMejor, tiemposMejor, nMejor, T)<<endl;
           cout<<"?"<<endl;
           cout<<"?"<<endl;
@@ -306,11 +348,14 @@ int main(int argc, char *argv[]){
         else if(!tOption && !ignoreOption){
 
           cout<<recursivoSinAlmacen(nMejor, T, tiemposMejor, vMejor, tiempoTotal)<<" ";
-          cout<<recursivoConAlmacen1(tiemposMejor, vMejor, nMejor, T)<<" ";
-          cout<<iterativoConAlmacenYTabla(vMejor, tiemposMejor, nMejor, T)<<" ";
+          cout<<recursivoConAlmacen2(M, vMejor, tiemposMejor, nMejor, T, copiasDeCadaObjeto)<<" ";
+          cout<<iterativoConAlmacenYTabla(vMejor, tiemposMejor, nMejor, T, MIter)<<" ";
           cout<<iterativoConAlmacenConTiempoMejorado(vMejor, tiemposMejor, nMejor, T)<<endl;
           cout<<"?"<<endl;
           cout<<tiempoTotal<<endl;
+
+          mostrarMatrizMemo(M, n, T, m);
+          mostrarMatrizIter(MIter, n, T, m);
 
         }
 
