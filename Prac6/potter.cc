@@ -175,26 +175,8 @@ int iterativoConAlmacenConTiempoMejoradoAlmacenandoDecisiones(vector<int> &v, ve
   return M[last_n][last_W];
 }
 
-// Extracción de las decisiones que interesan
-void parse(vector<int> &w, vector<vector<bool>> &trace, vector<bool> &sol){
-
-  int last_n = trace.size()-1;
-  int W = trace[0].size()-1;
-
-  for(int n=last_n; n>0; n--){
-    if(trace[n][W]){
-      sol[n-1] = true;
-      W-=w[n-1];
-    }
-    else{
-      sol[n-1] = false;
-    }
-  }
-
-}
-
 // Extracción de la selección (directamente del almacén)
-void parse2(vector<vector<int>> &M, vector<int> &v, vector<int> &w, int n, int W, vector<bool> &sol){
+void parse(vector<vector<double>> &M, vector<int> &v, vector<int> &w, int n, int W, vector<bool> &sol){
   if(n==0) return;
 
   int s1 = M[n-1][W];
@@ -204,11 +186,11 @@ void parse2(vector<vector<int>> &M, vector<int> &v, vector<int> &w, int n, int W
   }
   if(s1>=s2){
     sol[n-1] = false;
-    parse2(M, v, w, n-1, W, sol);
+    parse(M, v, w, n-1, W, sol);
   }
   else{
     sol[n-1] = true;
-    parse2(M, v, w, n-1, W-w[n-1], sol);
+    parse(M, v, w, n-1, W-w[n-1], sol);
   }
 }
 
@@ -282,15 +264,15 @@ int main(int argc, char *argv[]){
 
         // Si se encuentra la opcion '-f' se procede a leer el fichero.
 
-        int n=0, T=0;
-        int tiempoTotal=0;
-        vector<int> t;
-        vector<int> v;
-        vector<int> m;
-        vector<int> copiasDeCadaObjeto;
+        int n=0, T=0; // numero de valores y tamaño máximo
 
-        vector<int> vMejor;
-        vector<int> tiemposMejor;
+        vector<int> t; // vector de tiempos
+        vector<int> v; // vector de valores
+        vector<int> m; // vector de veces que se repite un elemento
+
+
+        vector<int> vMejor;  // vector de valores alargado con m
+        vector<int> tiemposMejor; // vector de tiempos alargado con m
 
 
 
@@ -305,20 +287,56 @@ int main(int argc, char *argv[]){
           }
         }
 
-        int nMejor = vMejor.size();
+        int nMejor = vMejor.size();  // nuevo tamaño del vector tras alargarlo
 
 
-        vector<vector<double>> M(nMejor+1, vector<double>(T+1, SENTINEL));
-        vector<vector<int>> MIter(nMejor+1, vector<int>(T+1));
+        vector<vector<double>> M(nMejor+1, vector<double>(T+1, SENTINEL)); // Vector para los algoritmos recurisvos
+        vector<vector<int>> MIter(nMejor+1, vector<int>(T+1)); // Vector para los algoritmos iterativos
 
+        int tiempoTotal=0;
+        vector<int> copiasDeCadaObjeto;
 
         if(tOption && ignoreOption){
 
           cout<<recursivoConAlmacen2(M, vMejor, tiemposMejor, nMejor, T, copiasDeCadaObjeto)<<" ";
           cout<<iterativoConAlmacenYTabla(vMejor, tiemposMejor, nMejor, T, MIter)<<" ";
           cout<<iterativoConAlmacenConTiempoMejorado(vMejor, tiemposMejor, nMejor, T)<<endl;
-          cout<<"?"<<endl;
-          cout<<"?"<<endl;
+
+          // Calcular cosillas
+
+          vector<bool> sol(v.size());
+          parse(M, vMejor, tiemposMejor, nMejor, T, sol); // calculamos un vector con las decisiones
+
+
+          vector<int> copias(v.size()); // vector para almacenar las copiasd de cada objeto
+          for(int k=0; k<v.size(); k++){
+            copias[k] = 0;
+          }
+
+
+          vector<int> mAux = m; // Copiamos el contenido del vector m en un auxiliar
+          int pos=0;
+          for(int k=0; k<vMejor.size(); k++){
+            if(mAux[pos]==0){
+              pos++;
+            }
+            mAux[pos]--;
+            if(sol[k]==true){
+              copias[pos]++;
+              tiempoTotal += tiemposMejor[k];
+            }
+          }
+
+          //cout<<"?"<<endl;
+
+          for(int k=0; k<n; k++){
+            cout<<copias[k]<<" ";
+          }
+          cout<<endl;
+
+          // cout<<"?"<<endl;
+
+          cout<<tiempoTotal<<endl;
 
           mostrarMatrizMemo(M, n, T, m);
           mostrarMatrizIter(MIter, n, T, m);
@@ -330,8 +348,40 @@ int main(int argc, char *argv[]){
           cout<<recursivoConAlmacen2(M, vMejor, tiemposMejor, nMejor, T, copiasDeCadaObjeto)<<" ";
           cout<<iterativoConAlmacenYTabla(vMejor, tiemposMejor, nMejor, T, MIter)<<" ";
           cout<<iterativoConAlmacenConTiempoMejorado(vMejor, tiemposMejor, nMejor, T)<<endl;
-          cout<<"?"<<endl;
-          cout<<"?"<<endl;
+
+          vector<bool> sol(v.size());
+          parse(M, vMejor, tiemposMejor, nMejor, T, sol); // calculamos un vector con las decisiones
+
+
+          vector<int> copias(v.size()); // vector para almacenar las copiasd de cada objeto
+          for(int k=0; k<v.size(); k++){
+            copias[k] = 0;
+          }
+
+
+          vector<int> mAux = m; // Copiamos el contenido del vector m en un auxiliar
+          int pos=0;
+          for(int k=0; k<vMejor.size(); k++){
+            if(mAux[pos]==0){
+              pos++;
+            }
+            mAux[pos]--;
+            if(sol[k]==true){
+              copias[pos]++;
+              tiempoTotal += tiemposMejor[k];
+            }
+          }
+
+          //cout<<"?"<<endl;
+
+          for(int k=0; k<n; k++){
+            cout<<copias[k]<<" ";
+          }
+          cout<<endl;
+
+          // cout<<"?"<<endl;
+
+          cout<<tiempoTotal<<endl;
 
           mostrarMatrizMemo(M, n, T, m);
           mostrarMatrizIter(MIter, n, T, m);
@@ -342,8 +392,40 @@ int main(int argc, char *argv[]){
           cout<<recursivoConAlmacen2(M, vMejor, tiemposMejor, nMejor, T, copiasDeCadaObjeto)<<" ";
           cout<<iterativoConAlmacenYTabla(vMejor, tiemposMejor, nMejor, T, MIter)<<" ";
           cout<<iterativoConAlmacenConTiempoMejorado(vMejor, tiemposMejor, nMejor, T)<<endl;
-          cout<<"?"<<endl;
-          cout<<"?"<<endl;
+
+          vector<bool> sol(v.size());
+          parse(M, vMejor, tiemposMejor, nMejor, T, sol); // calculamos un vector con las decisiones
+
+
+          vector<int> copias(v.size()); // vector para almacenar las copiasd de cada objeto
+          for(int k=0; k<v.size(); k++){
+            copias[k] = 0;
+          }
+
+
+          vector<int> mAux = m; // Copiamos el contenido del vector m en un auxiliar
+          int pos=0;
+          for(int k=0; k<vMejor.size(); k++){
+            if(mAux[pos]==0){
+              pos++;
+            }
+            mAux[pos]--;
+            if(sol[k]==true){
+              copias[pos]++;
+              tiempoTotal += tiemposMejor[k];
+            }
+          }
+
+          //cout<<"?"<<endl;
+
+          for(int k=0; k<n; k++){
+            cout<<copias[k]<<" ";
+          }
+          cout<<endl;
+
+          // cout<<"?"<<endl;
+
+          cout<<tiempoTotal<<endl;
 
         }
         else if(!tOption && !ignoreOption){
@@ -352,11 +434,42 @@ int main(int argc, char *argv[]){
           cout<<recursivoConAlmacen2(M, vMejor, tiemposMejor, nMejor, T, copiasDeCadaObjeto)<<" ";
           cout<<iterativoConAlmacenYTabla(vMejor, tiemposMejor, nMejor, T, MIter)<<" ";
           cout<<iterativoConAlmacenConTiempoMejorado(vMejor, tiemposMejor, nMejor, T)<<endl;
-          cout<<"?"<<endl;
+
+          vector<bool> sol(v.size());
+          parse(M, vMejor, tiemposMejor, nMejor, T, sol); // calculamos un vector con las decisiones
+
+
+          vector<int> copias(v.size()); // vector para almacenar las copiasd de cada objeto
+          for(int k=0; k<v.size(); k++){
+            copias[k] = 0;
+          }
+
+
+          vector<int> mAux = m; // Copiamos el contenido del vector m en un auxiliar
+          int pos=0;
+          for(int k=0; k<vMejor.size(); k++){
+            if(mAux[pos]==0){
+              pos++;
+            }
+            mAux[pos]--;
+            if(sol[k]==true){
+              copias[pos]++;
+              tiempoTotal += tiemposMejor[k];
+            }
+          }
+
+          //cout<<"?"<<endl;
+
+          for(int k=0; k<n; k++){
+            cout<<copias[k]<<" ";
+          }
+          cout<<endl;
+
+          // cout<<"?"<<endl;
+
           cout<<tiempoTotal<<endl;
 
         }
-
 
 
         exit(1);
