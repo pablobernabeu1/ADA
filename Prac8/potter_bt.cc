@@ -50,33 +50,61 @@ void leerFichero(ifstream &fichero, string &file, int &n, double &T, vector<doub
     cerr<<"ERROR: cant´t open file: "<<file<<"."<<endl;
     exit(0);
   }
-
 }
 
 
 // ---------------------------------------------------------------------------------------------------------------------------------
-double weight(const vector<double> &w, size_t k, const vector<unsigned> &x){
-  double r = 0.0;
-  for(size_t i=0; i<k; i++) r += w[i]*x[i];
-  return r;
-}
- 
-double value(const vector<double> &v, const vector<unsigned> &x){
-  double r=0.0;
-  for(size_t i=0; i<v.size(); i++) r+=v[i]*x[i];
+double potter_bt_optimo_c(const vector<double> &v, const vector<double> &w, size_t k, double W){
+  vector<unsigned> idx(w.size());
+  for(unsigned i=0; i<idx.size(); i++) idx[i]=i;
 
-  return r;
+  sort(idx.begin(), idx.end(),
+    [v,w](unsigned x, unsigned y){
+      return v[x]/w[x] > v[y]/w[y];
+    }
+  );
+
+  double acc_v = 0.0;
+  double acc_w = 0.0;
+
+  for(unsigned i=1; i<=k; i++){
+    if(w[idx[i]]>W){
+      acc_v += W/w[idx[i]]*v[idx[i]];
+      acc_w += W/w[idx[i]]*w[idx[i]];
+      break;
+    }
+    acc_v += v[idx[i]];
+    W -= w[idx[i]];
+  }
+
+  return acc_v;
 }
 
-double add_rest(const vector<double> &v, size_t k){
-  double r=0.0;
-  for(size_t i=k; i<v.size(); i++) r+=v[i];
-  return r;
+double potter_bt_optimo_d(const vector<double> &v, const vector<double> &w, double &W){
+  vector<unsigned> idx(w.size());
+  for(unsigned i=0; i<idx.size(); i++) idx[i]=i;
+
+  sort(idx.begin(), idx.end(),
+    [v,w](unsigned x, unsigned y){
+      return (double)v[x]/w[x] > (double)v[y]/w[y];
+    }
+  );
+
+  double acc_v = 0.0;
+
+  for(auto i : idx){
+    if(w[i]<W){
+      acc_v += v[i];
+      W-=w[i];
+    }
+  }
+
+  return acc_v;
 }
 
 void potter_bt_optimo(const vector<double> &v, const vector<double> &w, double W, size_t k, vector<unsigned> &x,double acc_w, double acc_v, double &best_v){
   if(k==x.size()){
-    best_v = max(best_v, acc_v);
+    best_v = max(acc_v, best_v);
     return;
   }
 
@@ -84,7 +112,7 @@ void potter_bt_optimo(const vector<double> &v, const vector<double> &w, double W
     x[k]=j;
     double present_w = acc_w + x[k] * w[k];
     double present_v = acc_v + x[k] * v[k];
-    if(present_w<=W && present_v + add_rest(v, k+1) > best_v){
+    if(present_w<=W && present_v + potter_bt_optimo_c(v,w,k+1,W-present_w) > best_v){
       potter_bt_optimo(v, w, W, k+1, x, present_w, present_v, best_v);
     }
   }
@@ -92,7 +120,7 @@ void potter_bt_optimo(const vector<double> &v, const vector<double> &w, double W
 
 double potter_bt_optimo(const vector<double> &v, const vector<double> &w, double W, vector<unsigned> &x){
 
-  double best_v = numeric_limits<double>::lowest();
+  double best_v = potter_bt_optimo_d(v,w,W);
 
   potter_bt_optimo(v,w,W, 0, x, 0, 0, best_v);
 
@@ -136,7 +164,7 @@ int main(int argc, char *argv[]){
 
         // Implementación del nuevo algoritmo.
 
-        vector<unsigned> x(tiemposMejor.size());
+        vector<unsigned> x(vMejor.size());
 
         cout<<potter_bt_optimo(vMejor, tiemposMejor, T, x)<<endl;
         
