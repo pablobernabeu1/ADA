@@ -88,13 +88,11 @@ double potter_bt_optimo_c(const vector<double> &v, const vector<double> &w, vect
     for(unsigned i = k; i < v.size() && W > 0; i++){
       if(W < w[i] * m[i]){
         acc_v += (v[i] * (W/w[i]));
-        //cout << acc_v << endl;
         W = 0;
       }
       else{
         W = W - (w[i] * m[i]);
         acc_v += v[i] * m[i];
-        //cout << acc_v << endl;
       }
     }
 
@@ -183,10 +181,14 @@ int main(int argc, char *argv[]){
 
         // Implementación del nuevo algoritmo.
 
+        auto start = clock();
         cout<<potter_bt_optimo(v, t, T, m)<<endl;
+        auto end = clock();
 
+        cout<<visited_nodes<<" "<<explored_nodes<<" "<<visited_lead_nodes<<" "<<no_feasible_discarded_nodes<<" "<<no_promising_discarded_nodes<<endl;
         
-        
+        cout<<(1000.0*(end-start)/CLOCKS_PER_SEC)<<endl;
+
         exit(1);
       }
       else{
