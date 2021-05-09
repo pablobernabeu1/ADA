@@ -7,6 +7,7 @@
 #include<stdlib.h>
 #include<limits>
 #include<algorithm>
+#include<numeric>
 using namespace std;
 
 const int SENTINEL = -1;
@@ -65,12 +66,10 @@ double potter_bt_optimo_c(const vector<double> &v, const vector<double> &w, size
   );
 
   double acc_v = 0.0;
-  double acc_w = 0.0;
 
-  for(unsigned i=1; i<=k; i++){
-    if(w[idx[i]]>W){
+  for(unsigned i=k; i<v.size(); i++){
+    if(w[idx[i]]>W) {
       acc_v += W/w[idx[i]]*v[idx[i]];
-      acc_w += W/w[idx[i]]*w[idx[i]];
       break;
     }
     acc_v += v[idx[i]];
@@ -80,13 +79,13 @@ double potter_bt_optimo_c(const vector<double> &v, const vector<double> &w, size
   return acc_v;
 }
 
-double potter_bt_optimo_d(const vector<double> &v, const vector<double> &w, double &W){
-  vector<unsigned> idx(w.size());
-  for(unsigned i=0; i<idx.size(); i++) idx[i]=i;
+double potter_bt_optimo_d(const vector<double> &v, const vector<double> &w, double W){
+  vector<size_t> idx(w.size());
+  for(size_t i=0; i<idx.size(); i++) idx[i]=i;
 
   sort(idx.begin(), idx.end(),
-    [v,w](unsigned x, unsigned y){
-      return (double)v[x]/w[x] > (double)v[y]/w[y];
+    [&v,&w](size_t x, size_t y){
+      return v[x]/w[x] > v[y]/w[y];
     }
   );
 
@@ -102,29 +101,49 @@ double potter_bt_optimo_d(const vector<double> &v, const vector<double> &w, doub
   return acc_v;
 }
 
-void potter_bt_optimo(const vector<double> &v, const vector<double> &w, double W, size_t k, vector<unsigned> &x,double acc_w, double acc_v, double &best_v){
+void potter_bt_optimo(const vector<double> &v, const vector<double> &w, double W, size_t k, vector<short> &x, double weigth, double value, double &best_val){
   if(k==x.size()){
-    best_v = max(acc_v, best_v);
+    //cout<<"Hola"<<endl;
+    best_val = value;
     return;
   }
 
-  for(unsigned j=0; j<2; j++){
-    x[k]=j;
-    double present_w = acc_w + x[k] * w[k];
-    double present_v = acc_v + x[k] * v[k];
-    if(present_w<=W && present_v + potter_bt_optimo_c(v,w,k+1,W-present_w) > best_v){
-      potter_bt_optimo(v, w, W, k+1, x, present_w, present_v, best_v);
+  for(int j=1; j>=0; j--){
+    x[k] = j;
+    double new_weigth = weigth + x[k]*w[k];
+    double new_value = value + x[k]*v[k];
+    
+    if(new_weigth<=W && new_value + potter_bt_optimo_c(v,w,k+1, W-new_weigth)>best_val){
+      //cout<<"Hola"<<endl;
+      potter_bt_optimo(v,w,W,k+1,x,new_weigth, new_value, best_val);
     }
   }
 }
 
-double potter_bt_optimo(const vector<double> &v, const vector<double> &w, double W, vector<unsigned> &x){
+double potter_bt_optimo(const vector<double> &v, const vector<double> &w, double W){
 
-  double best_v = potter_bt_optimo_d(v,w,W);
+  vector<size_t> idx(v.size());
+  iota(begin(idx), end(idx), 0);
 
-  potter_bt_optimo(v,w,W, 0, x, 0, 0, best_v);
+  sort(begin(idx), end(idx),
+    [&v, &w](size_t i, size_t j) {
+      return v[i]/w[i]>v[j]/w[j];
+    }
+  );
 
-  return best_v;
+  vector<double> s_v(v.size()), s_w(w.size());
+
+  for(size_t i=0; i<v.size(); i++){
+    s_v[i] = v[idx[i]];
+    s_w[i] = w[idx[i]];
+  }
+
+  vector<short> x(v.size());
+  double best_val = potter_bt_optimo_d(s_v,s_w,W);
+
+  potter_bt_optimo(s_v,s_w,W, 0, x, 0, 0, best_val);
+
+  return best_val;
 }
 // ---------------------------------------------------------------------------------------------------------------------------------
 
@@ -164,9 +183,7 @@ int main(int argc, char *argv[]){
 
         // Implementación del nuevo algoritmo.
 
-        vector<unsigned> x(vMejor.size());
-
-        cout<<potter_bt_optimo(vMejor, tiemposMejor, T, x)<<endl;
+        cout<<potter_bt_optimo(vMejor, tiemposMejor, T)<<endl;
         
         exit(1);
       }
