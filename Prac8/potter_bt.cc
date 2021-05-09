@@ -1,5 +1,4 @@
 // Pablo Antonio Bernabeu Cartagena 20083111V
-
 #include<iostream>
 #include<fstream>
 #include<cstring>
@@ -10,6 +9,14 @@
 #include<numeric>
 #include<cmath>
 using namespace std;
+
+/////////////////////////////////////////
+int visited_lead_nodes=0;
+int visited_nodes=0;
+int explored_nodes=0;
+int no_promising_discarded_nodes=0;
+int no_feasible_discarded_nodes=0;
+/////////////////////////////////////////
 
 // Función que convierte un string a numero, en la lectura de los archivos
 int convertir_a_numero(char cadena){
@@ -94,31 +101,32 @@ double potter_bt_optimo_c(const vector<double> &v, const vector<double> &w, vect
     return acc_v;
 }
 
-
-
 void potter_bt_optimo(const vector<double> &v, const vector<double> &w, vector<int> &m, double W, size_t k, vector<short> &x, double weigth, double value, double &best_val){
-  if((unsigned)k == x.size()){ // base case
+  if((unsigned)k == x.size()){
+    visited_lead_nodes++; 
 		if(value > best_val){
 			best_val = value;
 		}
 		return;
 	}
 
-	for(int j = m[k]; j >= 0; j--){ // <== reversing the order
+	for(int j = m[k]; j >= 0; j--){ 
+    visited_nodes++;
 		x[k] = j;
-		double new_time = weigth + x[k] * w[k]; 	// updating time
-		long new_value = value + x[k] * v[k]; // updating value
+		double new_time = weigth + x[k] * w[k]; 	
+		long new_value = value + x[k] * v[k]; 
 
-		if(new_time <= W){					// is promising
-			if(new_value + potter_bt_optimo_c(v, w, m, k+1, W - new_time) > best_val){ // simplified version
+		if(new_time <= W){					
+			if(new_value + potter_bt_optimo_c(v, w, m, k+1, W - new_time) > best_val){ 
+        explored_nodes++;
 				potter_bt_optimo(v, w, m, W, k+1, x, new_time, new_value, best_val);
 			}
 			else{
-
+        no_promising_discarded_nodes++;
 			}
 		}
 		else{
-
+      no_feasible_discarded_nodes++;
 		}
 	}
 }
@@ -176,6 +184,8 @@ int main(int argc, char *argv[]){
         // Implementación del nuevo algoritmo.
 
         cout<<potter_bt_optimo(v, t, T, m)<<endl;
+
+        
         
         exit(1);
       }
