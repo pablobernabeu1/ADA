@@ -8,10 +8,8 @@
 #include<limits>
 #include<algorithm>
 #include<numeric>
+#include<cmath>
 using namespace std;
-
-const int SENTINEL = -1;
-
 
 // Función que convierte un string a numero, en la lectura de los archivos
 int convertir_a_numero(char cadena){
@@ -54,101 +52,106 @@ void leerFichero(ifstream &fichero, string &file, int &n, double &T, vector<doub
 }
 
 
-// ---------------------------------------------------------------------------------------------------------------------------------
-double potter_bt_optimo_c(const vector<double> &v, const vector<double> &w, size_t k, double W){
-  vector<unsigned> idx(w.size());
-  for(unsigned i=0; i<idx.size(); i++) idx[i]=i;
-
-  sort(idx.begin(), idx.end(),
-    [v,w](unsigned x, unsigned y){
-      return v[x]/w[x] > v[y]/w[y];
-    }
-  );
-
-  double acc_v = 0.0;
-
-  for(unsigned i=k; i<v.size(); i++){
-    if(w[idx[i]]>W) {
-      acc_v += W/w[idx[i]]*v[idx[i]];
-      break;
-    }
-    acc_v += v[idx[i]];
-    W -= w[idx[i]];
-  }
-
-  return acc_v;
-}
-
-double potter_bt_optimo_d(const vector<double> &v, const vector<double> &w, double W){
-  vector<size_t> idx(w.size());
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+double potter_bt_optimo_d(const vector<double> &v, const vector<double> &w, vector<int> &m, vector<short> &x, double W){
+  vector<size_t> idx(v.size());
   for(size_t i=0; i<idx.size(); i++) idx[i]=i;
 
   sort(idx.begin(), idx.end(),
-    [&v,&w](size_t x, size_t y){
+    [v,w](size_t x, size_t y){
       return v[x]/w[x] > v[y]/w[y];
     }
   );
 
   double acc_v = 0.0;
 
-  for(auto i : idx){
-    if(w[i]<W){
-      acc_v += v[i];
-      W-=w[i];
-    }
+  for(unsigned i=0; i<idx.size() && W>0; i++){
+      double aux = m[idx[i]];
+      x[idx[i]] = min(W/w[idx[i]],aux);
+      W -= w[idx[i]]*x[idx[i]];
+      acc_v += x[idx[i]]*v[idx[i]];
   }
 
   return acc_v;
 }
 
-void potter_bt_optimo(const vector<double> &v, const vector<double> &w, double W, size_t k, vector<short> &x, double weigth, double value, double &best_val){
-  if(k==x.size()){
-    //cout<<"Hola"<<endl;
-    best_val = value;
-    return;
-  }
+double potter_bt_optimo_c(const vector<double> &v, const vector<double> &w, vector<int> &m, size_t k, double W){
+    double acc_v = 0;
 
-  for(int j=1; j>=0; j--){
-    x[k] = j;
-    double new_weigth = weigth + x[k]*w[k];
-    double new_value = value + x[k]*v[k];
+    for(unsigned i = k; i < v.size() && W > 0; i++){
+      if(W < w[i] * m[i]){
+        acc_v += (v[i] * (W/w[i]));
+        //cout << acc_v << endl;
+        W = 0;
+      }
+      else{
+        W = W - (w[i] * m[i]);
+        acc_v += v[i] * m[i];
+        //cout << acc_v << endl;
+      }
+    }
+
+    return acc_v;
+}
+
+
+
+void potter_bt_optimo(const vector<double> &v, const vector<double> &w, vector<int> &m, double W, size_t k, vector<short> &x, double weigth, double value, double &best_val){
+  if((unsigned)k == x.size()){ // base case
+		if(value > best_val){
+			best_val = value;
+		}
+		return;
+	}
+
+	for(int j = m[k]; j >= 0; j--){ // <== reversing the order
+		x[k] = j;
+		double new_time = weigth + x[k] * w[k]; 	// updating time
+		long new_value = value + x[k] * v[k]; // updating value
+
+		if(new_time <= W){					// is promising
+			if(new_value + potter_bt_optimo_c(v, w, m, k+1, W - new_time) > best_val){ // simplified version
+				potter_bt_optimo(v, w, m, W, k+1, x, new_time, new_value, best_val);
+			}
+			else{
+
+			}
+		}
+		else{
+
+		}
+	}
+}
+
+double potter_bt_optimo(const vector<double> &v, const vector<double> &w, double W, vector<int> &m){
+
+    vector<size_t> idx(v.size());
+    for(unsigned i=0; i<idx.size(); i++) idx[i] = i;
+
+    sort(idx.begin(), idx.end(),
+        [v,w](size_t x, size_t y){
+            return v[x]/w[x] > v[y]/w[y];
+        }
+    );
+
+    vector<double> s_v(v.size()),s_w(w.size());
+    vector<int> s_m(m.size());
+    for(size_t i=0; i<v.size(); i++){
+        s_v[i] = v[idx[i]];
+        s_w[i] = w[idx[i]];
+        s_m[i] = m[idx[i]];
+    }
+  
+    vector<short> x(v.size());
+    double best_val = potter_bt_optimo_d(v,w,m,x,W);
     
-    if(new_weigth<=W && new_value + potter_bt_optimo_c(v,w,k+1, W-new_weigth)>best_val){
-      //cout<<"Hola"<<endl;
-      potter_bt_optimo(v,w,W,k+1,x,new_weigth, new_value, best_val);
-    }
-  }
+    potter_bt_optimo(s_v,s_w,s_m,W, 0, x, 0, 0, best_val);
+
+    return best_val;
 }
-
-double potter_bt_optimo(const vector<double> &v, const vector<double> &w, double W){
-
-  vector<size_t> idx(v.size());
-  iota(begin(idx), end(idx), 0);
-
-  sort(begin(idx), end(idx),
-    [&v, &w](size_t i, size_t j) {
-      return v[i]/w[i]>v[j]/w[j];
-    }
-  );
-
-  vector<double> s_v(v.size()), s_w(w.size());
-
-  for(size_t i=0; i<v.size(); i++){
-    s_v[i] = v[idx[i]];
-    s_w[i] = w[idx[i]];
-  }
-
-  vector<short> x(v.size());
-  double best_val = potter_bt_optimo_d(s_v,s_w,W);
-
-  potter_bt_optimo(s_v,s_w,W, 0, x, 0, 0, best_val);
-
-  return best_val;
-}
-// ---------------------------------------------------------------------------------------------------------------------------------
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-// Función principal
 int main(int argc, char *argv[]){
 
   string file="";
@@ -167,23 +170,12 @@ int main(int argc, char *argv[]){
         vector<double> v; // vector de valores
         vector<int> m; // vector de veces que se repite un elemento
 
-        vector<double> vMejor;  // vector de valores alargado con m
-        vector<double> tiemposMejor; // vector de tiempos alargado con m
-
         ifstream fichero(file);
         leerFichero(fichero, file, n, T, t, v, m);
 
-        for(long unsigned int j=0; j<m.size(); j++){  // Cambiamos las matrices
-          for(int k=0; k<m[j]; k++){
-            vMejor.push_back(v[j]);
-            tiemposMejor.push_back(t[j]);
-          }
-        }
-
-
         // Implementación del nuevo algoritmo.
 
-        cout<<potter_bt_optimo(vMejor, tiemposMejor, T)<<endl;
+        cout<<potter_bt_optimo(v, t, T, m)<<endl;
         
         exit(1);
       }
