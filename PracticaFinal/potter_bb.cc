@@ -102,18 +102,24 @@ double potter_bt_optimo_c(const vector<double> &v, const vector<double> &w, vect
 
 double potter_bb(const vector<double> &v, const vector<double> &w, vector<int> &m, double W){
 
-  vector<short> x(v.size());
+  vector<short> y(v.size());
+  
 
   using Sol = vector<short>;
   using Node = tuple<double, double, Sol, int>;
   priority_queue<Node> pq;
 
-  double best_val = potter_bt_optimo_d(v, w, m, x, 0, W); 
+  double value=0;
+  double weight = 0;
+  int k=0;
+  Sol x;
+
+  double best_val = potter_bt_optimo_d(v, w, m, y, 0, W); 
   pq.emplace(0.0, 0.0, Sol(v.size()), 0);
   
   while(!pq.empty()) {
 
-    auto [value, weigth, x, k] = pq.top();
+    auto [value, weight, x, k] = pq.top();
     pq.pop();
 
     if(k == v.size()) {
@@ -125,7 +131,7 @@ double potter_bb(const vector<double> &v, const vector<double> &w, vector<int> &
       x[k] = j;
     }
 
-    double new_weigth = weigth + x[k]*w[k];
+    double new_weigth = weight + x[k]*w[k];
     double new_value = value + x[k]*v[k];
 
     if(new_value + potter_bt_optimo_c(v, w, m, k+1, W - new_weigth) > best_val){ 

@@ -1,6 +1,6 @@
 # Pablo Antonio Bernabeu Cartagena 20083111V
 
-OPTS = -Wall -O3 -std=c++0x
+OPTS = -Wall -w -O3 -std=c++0x
 
 potter_bb: potter_bb.cc
 	g++ ${OPTS} -o potter_bb potter_bb.cc
