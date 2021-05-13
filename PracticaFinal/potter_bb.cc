@@ -8,6 +8,7 @@
 #include<algorithm>
 #include<numeric>
 #include<cmath>
+#include<queue>
 using namespace std;
 
 /////////////////////////////////////////
@@ -60,7 +61,7 @@ void leerFichero(ifstream &fichero, string &file, int &n, double &T, vector<doub
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-double potter_bt_optimo_d(const vector<double> &v, const vector<double> &w, vector<int> &m, vector<short> &x, double W){
+double potter_bt_optimo_d(const vector<double> &v, const vector<double> &w, vector<int> &m, vector<short> &x, size_t k,  double W){
   vector<size_t> idx(v.size());
   for(size_t i=0; i<idx.size(); i++) idx[i]=i;
 
@@ -72,7 +73,7 @@ double potter_bt_optimo_d(const vector<double> &v, const vector<double> &w, vect
 
   double acc_v = 0.0;
 
-  for(unsigned i=0; i<idx.size() && W>0; i++){
+  for(unsigned i=k; i<idx.size() && W>0; i++){
       double aux = m[idx[i]];
       x[idx[i]] = min(W/w[idx[i]],aux);
       W -= w[idx[i]]*x[idx[i]];
@@ -99,6 +100,45 @@ double potter_bt_optimo_c(const vector<double> &v, const vector<double> &w, vect
     return acc_v;
 }
 
+double potter_bb(const vector<double> &v, const vector<double> &w, vector<int> &m, double W){
+
+  vector<short> x(v.size());
+
+  using Sol = vector<short>;
+  using Node = tuple<double, double, Sol, int>;
+  priority_queue<Node> pq;
+
+  double best_val = potter_bt_optimo_d(v, w, m, x, 0, W); 
+  pq.emplace(0.0, 0.0, Sol(v.size()), 0);
+  
+  while(!pq.empty()) {
+
+    auto [value, weigth, x, k] = pq.top();
+    pq.pop();
+
+    if(k == v.size()) {
+      best_val = max(value, best_val);
+      continue;
+    }
+
+    for(unsigned j=0; j<2; j++){
+      x[k] = j;
+    }
+
+    double new_weigth = weigth + x[k]*w[k];
+    double new_value = value + x[k]*v[k];
+
+    if(new_value + potter_bt_optimo_c(v, w, m, k+1, W - new_weigth) > best_val){ 
+    
+      pq.emplace(new_value, new_weigth, x, k+1);
+
+    }
+
+  }
+  
+
+ return best_val;
+}
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
