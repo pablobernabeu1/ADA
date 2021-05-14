@@ -95,6 +95,7 @@ double potter_bt_optimo_c(const vector<double> &v, const vector<double> &w, vect
     return acc_v;
 }
 
+
 double potter_bb(const vector<double> &v, const vector<double> &w, vector<int> &m, double W){
 
   vector<short> y(v.size());
@@ -107,7 +108,7 @@ double potter_bb(const vector<double> &v, const vector<double> &w, vector<int> &
   double opt_bound = potter_bt_optimo_c(v, w, m, 0, W);
 
   double value=0, weight = 0;
-  Sol x;
+  Sol x(v.size());
   size_t k=0;
   Node n;
 
@@ -175,8 +176,13 @@ int main(int argc, char *argv[]){
         leerFichero(fichero, file, n, T, t, v, m);
 
         // Implementación del nuevo algoritmo.
-
+        auto start = clock();
         cout<<potter_bb(v, t, m, T)<<endl;
+        auto end = clock();
+
+        cout<<"- "<<"- "<<"- "<<"- "<<"- "<<"- "<<"- "<<"- "<<endl;
+
+        cout<<(1000.0*(end-start)/CLOCKS_PER_SEC)<<endl;
 
         exit(1);
       }
