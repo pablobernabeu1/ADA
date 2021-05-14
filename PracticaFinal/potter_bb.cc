@@ -9,6 +9,7 @@
 #include<numeric>
 #include<cmath>
 #include<queue>
+#include<tuple>
 using namespace std;
 
 /////////////////////////////////////////
@@ -18,12 +19,6 @@ int explored_nodes=0;
 int no_promising_discarded_nodes=0;
 int no_feasible_discarded_nodes=0;
 /////////////////////////////////////////
-
-// Función que convierte un string a numero, en la lectura de los archivos
-int convertir_a_numero(char cadena){
-  int s = cadena-48;
-  return s;
-}
 
 // Función para leer los archivos y almacenar la información en sus variables
 void leerFichero(ifstream &fichero, string &file, int &n, double &T, vector<double> &t, vector<double> &v, vector<int> &m){
@@ -104,42 +99,51 @@ double potter_bb(const vector<double> &v, const vector<double> &w, vector<int> &
 
   vector<short> y(v.size());
   
-
-  using Sol = vector<short>;
-  using Node = tuple<double, double, Sol, int>;
+  typedef vector<short> Sol;
+  typedef tuple < double, double, double, Sol, unsigned > Node;
   priority_queue<Node> pq;
 
-  double value=0;
-  double weight = 0;
-  int k=0;
-  Sol x;
-
   double best_val = potter_bt_optimo_d(v, w, m, y, 0, W); 
-  pq.emplace(0.0, 0.0, Sol(v.size()), 0);
+  double opt_bound = potter_bt_optimo_c(v, w, m, 0, W);
+
+  double value=0, weight = 0;
+  Sol x;
+  size_t k=0;
+  Node n;
+
+  pq.emplace(opt_bound, 0.0, 0.0, Sol(v.size()), 0);
   
   while(!pq.empty()) {
 
-    auto [value, weight, x, k] = pq.top();
+    n = pq.top();
+    value = get<1>(n);
+    weight = get<2>(n);
+    x = get<3>(n);
+    k = get<4>(n);
     pq.pop();
 
     if(k == v.size()) {
-      best_val = max(value, best_val);
+      best_val = max(best_val, value);
       continue;
     }
 
-    for(unsigned j=0; j<2; j++){
+    for(unsigned j=0; j<=m[k]; j++){
       x[k] = j;
+
+      double new_weigth = weight + x[k]*w[k];
+      double new_value = value + x[k]*v[k];
+
+      if(new_weigth <= W){
+
+        double pes_bound = new_value + potter_bt_optimo_d(v, w, m, y, k+1, W-new_weigth);
+        best_val = max(best_val, pes_bound);
+
+        double opt_bound = new_value + potter_bt_optimo_c(v, w, m, k+1, W-new_weigth);
+        if(opt_bound>best_val){
+          pq.emplace(opt_bound, new_value, new_weigth, x, k+1);
+        }
+      }
     }
-
-    double new_weigth = weight + x[k]*w[k];
-    double new_value = value + x[k]*v[k];
-
-    if(new_value + potter_bt_optimo_c(v, w, m, k+1, W - new_weigth) > best_val){ 
-    
-      pq.emplace(new_value, new_weigth, x, k+1);
-
-    }
-
   }
   
 
@@ -172,7 +176,7 @@ int main(int argc, char *argv[]){
 
         // Implementación del nuevo algoritmo.
 
-        
+        cout<<potter_bb(v, t, m, T)<<endl;
 
         exit(1);
       }
