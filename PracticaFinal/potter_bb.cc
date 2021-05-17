@@ -13,11 +13,14 @@
 using namespace std;
 
 /////////////////////////////////////////
-int visited_lead_nodes=0;
-int visited_nodes=0;
-int explored_nodes=0;
-int no_promising_discarded_nodes=0;
-int no_feasible_discarded_nodes=0;
+int discarded_promissing_nodes=0; //*
+int visited_leaf_nodes=0; //*
+int current_best_updated_from_completed_nodes=0; //*
+int visited_nodes=0; //*
+int current_best_updated_pessimistic_bounds=0; //*
+int explored_nodes=0; //*
+int no_promissing_discarded_nodes=0; //*
+int no_feasible_discarded_nodes=0; //*
 /////////////////////////////////////////
 
 // Función para leer los archivos y almacenar la información en sus variables
@@ -124,12 +127,15 @@ double potter_bb(const vector<double> &v, const vector<double> &w, vector<int> &
     pq.pop();
 
     if(k == v.size()) {
+      discarded_promissing_nodes++;
       best_val = max(best_val, value);
       continue;
     }
 
     for(unsigned j=0; j<=m[k]; j++){
       x[k] = j;
+
+      visited_nodes++;
 
       double new_weigth = weight + x[k]*w[k];
       double new_value = value + x[k]*v[k];
@@ -141,8 +147,15 @@ double potter_bb(const vector<double> &v, const vector<double> &w, vector<int> &
 
         double opt_bound = new_value + potter_bt_optimo_c(v, w, m, k+1, W-new_weigth);
         if(opt_bound>best_val){
+          explored_nodes++;
           pq.emplace(opt_bound, new_value, new_weigth, x, k+1);
         }
+        else{
+          no_promissing_discarded_nodes++;
+        }
+      }
+      else{
+        no_feasible_discarded_nodes++;
       }
     }
   }
@@ -180,7 +193,9 @@ int main(int argc, char *argv[]){
         cout<<potter_bb(v, t, m, T)<<endl;
         auto end = clock();
 
-        cout<<"- "<<"- "<<"- "<<"- "<<"- "<<"- "<<"- "<<"- "<<endl;
+        cout<<visited_nodes<<" "<<explored_nodes<<" "<<visited_leaf_nodes<<" "<<no_feasible_discarded_nodes<<" "
+        <<no_promissing_discarded_nodes<<" "<<discarded_promissing_nodes<<" "<<current_best_updated_from_completed_nodes
+        <<" "<<current_best_updated_pessimistic_bounds<<endl;
 
         cout<<(1000.0*(end-start)/CLOCKS_PER_SEC)<<endl;
 
