@@ -59,23 +59,19 @@ void leerFichero(ifstream &fichero, string &file, int &n, double &T, vector<doub
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-double potter_bt_optimo_d(const vector<double> &v, const vector<double> &w, vector<int> &m, vector<short> &x, size_t k,  double W){
-  vector<size_t> idx(v.size());
-  for(size_t i=0; i<idx.size(); i++) idx[i]=i;
+double potter_bt_optimo_d(const vector<double> &v, const vector<double> &w, vector<int> &m, size_t k,  double W){
+  double acc_v=0.0;
 
-  sort(idx.begin(), idx.end(),
-    [v,w](size_t x, size_t y){
-      return v[x]/w[x] > v[y]/w[y];
+  for(unsigned i=k; i<w.size(); i++){
+    for(int j=0; j<m[i]; j++){
+      if(w[i]<=W){
+        acc_v += v[i];
+        W -= w[i];
+      }
+      if(W==0){
+        return acc_v;
+      }
     }
-  );
-
-  double acc_v = 0.0;
-
-  for(unsigned i=k; i<idx.size() && W>0; i++){
-      double aux = m[idx[i]];
-      x[idx[i]] = min(W/w[idx[i]],aux);
-      W -= w[idx[i]]*x[idx[i]];
-      acc_v += x[idx[i]]*v[idx[i]];
   }
 
   return acc_v;
@@ -84,14 +80,16 @@ double potter_bt_optimo_d(const vector<double> &v, const vector<double> &w, vect
 double potter_bt_optimo_c(const vector<double> &v, const vector<double> &w, vector<int> &m, size_t k, double W){
     double acc_v = 0;
 
-    for(unsigned i = k; i < v.size() && W > 0; i++){
-      if(W < w[i] * m[i]){
-        acc_v += (v[i] * (W/w[i]));
-        W = 0;
-      }
-      else{
-        W = W - (w[i] * m[i]);
-        acc_v += v[i] * m[i];
+    for(size_t i = k; i < v.size(); i++){
+      for(size_t j=0; j<m[i]; j++){
+        if(w[i]>W){
+          acc_v += W/w[i] * v[i];
+          return acc_v;
+        }
+        else{
+          W -= w[i];
+          acc_v += v[i];
+        }
       }
     }
 
@@ -100,21 +98,37 @@ double potter_bt_optimo_c(const vector<double> &v, const vector<double> &w, vect
 
 
 double potter_bb(const vector<double> &v, const vector<double> &w, vector<int> &m, double W){
+  
+  vector<size_t> idx(v.size());
+  iota(begin(idx), end(idx), 0);
 
-  vector<short> y(v.size());
+  sort(begin(idx), end(idx),
+    [&v, &w](size_t i, size_t j)
+    {
+      return v[i]/w[i] > v[j]/w[j];
+    }
+  );
+  
+  vector<double> s_v(v.size()), s_w(w.size());
+  vector<int> s_m(m.size());
+  for(size_t i=0; i<v.size(); i++){
+    s_v[i] = v[idx[i]];
+    s_w[i] = w[idx[i]];
+    s_m[i] = m[idx[i]];
+  }
   
   typedef vector<short> Sol;
   typedef tuple < double, double, double, Sol, unsigned > Node;
   priority_queue<Node> pq;
 
-  double best_val = potter_bt_optimo_d(v, w, m, y, 0, W); 
-  double opt_bound = potter_bt_optimo_c(v, w, m, 0, W);
-
   double value=0, weight = 0;
   Sol x(v.size());
   size_t k=0;
   Node n;
-
+  
+  double best_val = potter_bt_optimo_d(s_v, s_w, s_m,  0, W);
+  double opt_bound = potter_bt_optimo_c(s_v, s_w, s_m, 0, W);
+  
   pq.emplace(opt_bound, 0.0, 0.0, Sol(v.size()), 0);
   
   while(!pq.empty()) {
@@ -132,20 +146,19 @@ double potter_bb(const vector<double> &v, const vector<double> &w, vector<int> &
       continue;
     }
 
-    for(unsigned j=0; j<=m[k]; j++){
+    for(unsigned j=0; j<=s_m[k]; j++){
       x[k] = j;
 
       visited_nodes++;
 
-      double new_weigth = weight + x[k]*w[k];
-      double new_value = value + x[k]*v[k];
+      double new_weigth = weight + x[k]*s_w[k];
+      double new_value = value + x[k]*s_v[k];
 
       if(new_weigth <= W){
-
-        double pes_bound = new_value + potter_bt_optimo_d(v, w, m, y, k+1, W-new_weigth);
+        double pes_bound = new_value + potter_bt_optimo_d(s_v, s_w, s_m, k+1, W-new_weigth);
         best_val = max(best_val, pes_bound);
 
-        double opt_bound = new_value + potter_bt_optimo_c(v, w, m, k+1, W-new_weigth);
+        double opt_bound = new_value + potter_bt_optimo_c(s_v, s_w, s_m, k+1, W-new_weigth);
         if(opt_bound>best_val){
           explored_nodes++;
           pq.emplace(opt_bound, new_value, new_weigth, x, k+1);
