@@ -121,7 +121,7 @@ double potter_bb(const vector<double> &v, const vector<double> &w, vector<int> &
   typedef tuple < double, double, double, Sol, unsigned > Node;
   priority_queue<Node> pq;
 
-  double value=0, weight = 0, ignore=0;
+  double value=0, weight = 0;
   Sol x(v.size());
   size_t k=0;
   Node n;
@@ -133,6 +133,8 @@ double potter_bb(const vector<double> &v, const vector<double> &w, vector<int> &
   
   while(!pq.empty()) {
 
+    double ignore = opt_bound;
+
     n = pq.top();
     value = get<1>(n);
     weight = get<2>(n);
@@ -140,11 +142,10 @@ double potter_bb(const vector<double> &v, const vector<double> &w, vector<int> &
     k = get<4>(n);
     pq.pop();
 
-    /*
-    if(ignore>best_val){
+    if(ignore<best_val){
       discarded_promissing_nodes++;
+      continue;
     }
-    */
 
     if(k == v.size()) {
       visited_leaf_nodes++;
@@ -167,7 +168,13 @@ double potter_bb(const vector<double> &v, const vector<double> &w, vector<int> &
         double pes_bound = new_value + potter_bt_optimo_d(s_v, s_w, s_m, k+1, W-new_weigth);
         best_val = max(best_val, pes_bound);
 
+        if(pes_bound>best_val){
+          current_best_updated_pessimistic_bounds++;
+          max(best_val, pes_bound);
+        }
+
         double opt_bound = new_value + potter_bt_optimo_c(s_v, s_w, s_m, k+1, W-new_weigth);
+
         if(opt_bound>best_val){
           explored_nodes++;
           pq.emplace(opt_bound, new_value, new_weigth, x, k+1);
